@@ -82,6 +82,10 @@ static inline enum video_format v4l2_to_obs_video_format(uint_fast32_t format)
 #endif
 	case V4L2_PIX_FMT_BGR24:
 		return VIDEO_FORMAT_BGR3;
+#ifdef V4L2_PIX_FMT_P010
+	case V4L2_PIX_FMT_P010:
+		return VIDEO_FORMAT_P010;
+#endif
 	default:
 		return VIDEO_FORMAT_NONE;
 	}
@@ -264,17 +268,19 @@ int_fast32_t v4l2_get_input_caps(int_fast32_t dev, int input, uint32_t *caps);
 /**
  * Set the video format on the device.
  *
- * If the action succeeds resolution, pixelformat and bytesperline are set
- * to the used values.
+ * If the action succeeds resolution, pixelformat, bytesperline and xfer_func
+ * are set to the used values.
  *
  * @param dev handle for the v4l2 device
  * @param resolution packed value of the resolution or -1 to leave as is
  * @param pixelformat index of the pixelformat or -1 to leave as is
  * @param bytesperline this will be set accordingly on success
+ * @param xfer_func the transfer function the device reports (V4L2_XFER_FUNC_*)
  *
  * @return negative on failure
  */
-int_fast32_t v4l2_set_format(int_fast32_t dev, int64_t *resolution, int *pixelformat, int *bytesperline);
+int_fast32_t v4l2_set_format(int_fast32_t dev, int64_t *resolution, int *pixelformat, int *bytesperline,
+			     uint32_t *xfer_func);
 
 /**
  * Set the framerate on the device.

@@ -189,13 +189,14 @@ int_fast32_t v4l2_get_input_caps(int_fast32_t dev, int input, uint32_t *caps)
 	return 0;
 }
 
-int_fast32_t v4l2_set_format(int_fast32_t dev, int64_t *resolution, int *pixelformat, int *bytesperline)
+int_fast32_t v4l2_set_format(int_fast32_t dev, int64_t *resolution, int *pixelformat, int *bytesperline,
+			     uint32_t *xfer_func)
 {
 	bool set = false;
 	int width, height;
 	struct v4l2_format fmt;
 
-	if (!dev || !resolution || !pixelformat || !bytesperline)
+	if (!dev || !resolution || !pixelformat || !bytesperline || !xfer_func)
 		return -1;
 
 	/* We need to set the type in order to query the settings */
@@ -222,6 +223,7 @@ int_fast32_t v4l2_set_format(int_fast32_t dev, int64_t *resolution, int *pixelfo
 	*resolution = v4l2_pack_tuple(fmt.fmt.pix.width, fmt.fmt.pix.height);
 	*pixelformat = fmt.fmt.pix.pixelformat;
 	*bytesperline = fmt.fmt.pix.bytesperline;
+	*xfer_func = fmt.fmt.pix.xfer_func;
 	return 0;
 }
 
