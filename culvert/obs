@@ -1,0 +1,10 @@
+#!/bin/bash
+# Alan's default OBS on culvert: OBS 32.2.2 + local Wayland projector
+# workaround (see ~/work/obs-projector/src/culvert/README.md). Uses the normal
+# config in ~/.config/obs-studio. The Arch package (/usr/bin/obs) stays
+# installed as the fallback; to revert, delete this file and
+# ~/.local/share/applications/com.obsproject.Studio.desktop.
+D=$HOME/work/obs-projector/default/install
+export LD_LIBRARY_PATH=$D/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+cd "$D/bin" || exit 1
+exec ./obs "$@"
