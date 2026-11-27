@@ -7,6 +7,9 @@
 #include <widgets/OBSBasic.hpp>
 
 #include <qt-wrappers.hpp>
+#ifdef ENABLE_WAYLAND
+#include <obs-nix-platform.h>
+#endif
 
 #include <QScreen>
 #include <QWindow>
@@ -38,8 +41,13 @@ OBSProjector::OBSProjector(QWidget *widget, obs_source_t *source_, int monitor, 
 	windowHandle()->setProperty("isOBSProjectorWindow", true);
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__)
-	// Prevents resizing of projector windows
-	setAttribute(Qt::WA_PaintOnScreen, false);
+	// Prevents resizing of projector windows. Not on Wayland, where Qt
+	// would then commit its own buffers to the surface OBS renders to,
+	// a protocol error under explicit sync.
+#ifdef ENABLE_WAYLAND
+	if (obs_get_nix_platform() != OBS_NIX_PLATFORM_WAYLAND)
+#endif
+		setAttribute(Qt::WA_PaintOnScreen, false);
 #endif
 
 	type = type_;
