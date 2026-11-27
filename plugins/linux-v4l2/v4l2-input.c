@@ -89,6 +89,7 @@ struct v4l2_data {
 	int width;
 	int height;
 	int linesize;
+	enum video_colorspace colorspace;
 	struct v4l2_buffer_data buffers;
 
 	bool auto_reset;
@@ -125,10 +126,14 @@ static void v4l2_prep_obs_frame(struct v4l2_data *data, struct obs_source_frame 
 	frame->width = data->width;
 	frame->height = data->height;
 	frame->format = format;
-	video_format_get_parameters_for_format(VIDEO_CS_DEFAULT, data->color_range, format, frame->color_matrix,
+	frame->trc = data->colorspace == VIDEO_CS_2100_PQ ? VIDEO_TRC_PQ : VIDEO_TRC_DEFAULT;
+	video_format_get_parameters_for_format(data->colorspace, data->color_range, format, frame->color_matrix,
 					       frame->color_range_min, frame->color_range_max);
 
 	switch (data->pixfmt) {
+#ifdef V4L2_PIX_FMT_P010
+	case V4L2_PIX_FMT_P010:
+#endif
 	case V4L2_PIX_FMT_NV12:
 		frame->linesize[0] = data->linesize;
 		frame->linesize[1] = data->linesize;
@@ -926,10 +931,13 @@ static void v4l2_init(struct v4l2_data *data)
 	}
 
 	/* set pixel format and resolution */
-	if (v4l2_set_format(data->dev, &data->resolution, &data->pixfmt, &data->linesize) < 0) {
+	uint32_t xfer_func;
+	if (v4l2_set_format(data->dev, &data->resolution, &data->pixfmt, &data->linesize, &xfer_func) < 0) {
 		blog(LOG_ERROR, "Unable to set format");
 		goto fail;
 	}
+	/* HDR10 sources (e.g. 10-bit HDMI capture) report a PQ transfer */
+	data->colorspace = xfer_func == V4L2_XFER_FUNC_SMPTE2084 ? VIDEO_CS_2100_PQ : VIDEO_CS_DEFAULT;
 	if (v4l2_to_obs_video_format(data->pixfmt) == VIDEO_FORMAT_NONE && data->pixfmt != V4L2_PIX_FMT_MJPEG &&
 	    data->pixfmt != V4L2_PIX_FMT_H264) {
 		blog(LOG_ERROR, "Selected video format not supported");
@@ -939,6 +947,8 @@ static void v4l2_init(struct v4l2_data *data)
 	blog(LOG_INFO, "Resolution: %dx%d", data->width, data->height);
 	blog(LOG_INFO, "Pixelformat: %s", V4L2_FOURCC_STR(data->pixfmt));
 	blog(LOG_INFO, "Linesize: %d Bytes", data->linesize);
+	if (data->colorspace == VIDEO_CS_2100_PQ)
+		blog(LOG_INFO, "Color space: Rec. 2100 (PQ)");
 
 	/* set framerate */
 	if (v4l2_set_framerate(data->dev, &data->framerate) < 0) {
